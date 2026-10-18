@@ -1,7 +1,8 @@
 # shift-left-1-webhook-interceptor
+
 This is Project 1 of a shift-left data-engineering portfolio. It demonstrates **data quality as an upstream promise** — validation pushed to the ingestion boundary and enforced automatically — using the [Open Data Contract Standard (ODCS) v3.2.0](https://bitol-io.github.io/open-data-contract-standard/) and the [Data Contract CLI](https://docs.datacontract.com/).
 
-> An ODCS data contract that blocks a breaking schema change in CI, before it ever reaches the warehouse.
+An ODCS data contract that blocks a breaking schema change in CI, before it ever reaches the warehouse.
 
 [![datacontract](https://github.com/initiative1972/shift-left-1-webhook-interceptor/actions/workflows/datacontract.yml/badge.svg)](../../actions/workflows/datacontract.yml)
 
