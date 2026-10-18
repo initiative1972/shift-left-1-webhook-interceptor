@@ -1,0 +1,18 @@
+# Shift-left, locally: lint the data contract before a commit ever lands.
+# Install with:  pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: datacontract-lint
+        name: datacontract lint
+        entry: datacontract lint datacontract.odcs.yaml
+        language: system
+        files: datacontract\.odcs\.yaml$
+        pass_filenames: false

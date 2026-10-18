@@ -1,0 +1,148 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: shift-left-webhook-interceptor-transactions
+name: Neobank Transaction Events
+version: 1.0.0
+status: active
+domain: payments
+dataProduct: transaction-events
+tenant: portfolio-demo
+
+description:
+  purpose: >-
+    Analytical contract for synthetic neobank transaction events ingested from an
+    upstream (producer) webhook into the analytical warehouse. Protects downstream
+    fraud, liquidity and behavioural models from silent upstream schema or semantic
+    changes.
+  usage: >-
+    Consumed by analytical models. Producers MUST NOT change the schema or semantics
+    of these fields without a versioned contract change; CI enforces this on every PR.
+  limitations: >-
+    Synthetic demonstration data only. Not real, customer, or employer data. Not for
+    production use as-is.
+
+# ---------------------------------------------------------------------------
+# Server: where `datacontract test` runs the quality rules. DuckDB is local
+# and zero-config so this runs on any machine and in CI with no credentials.
+# ---------------------------------------------------------------------------
+servers:
+  - server: local-warehouse
+    type: duckdb
+    path: data/warehouse.duckdb
+    schema: main
+
+# ---------------------------------------------------------------------------
+# Schema: the agreed structure, semantics, classification and quality rules.
+# ---------------------------------------------------------------------------
+schema:
+  - name: transactions
+    physicalName: transactions
+    logicalType: object
+    physicalType: table
+    description: One row per settled transaction event emitted by the upstream producer.
+    properties:
+      - name: transaction_id
+        businessName: Transaction ID
+        logicalType: string
+        physicalType: VARCHAR
+        description: Globally unique identifier for the transaction event.
+        required: true
+        unique: true
+        primaryKey: true
+
+      - name: account_id
+        businessName: Account ID
+        logicalType: string
+        physicalType: VARCHAR
+        description: Identifier of the account the transaction belongs to.
+        required: true
+        classification: restricted
+        tags: ['sensitive']
+
+      - name: amount
+        businessName: Transaction Amount
+        logicalType: number
+        physicalType: DECIMAL(18,2)
+        description: Signed transaction amount in the minor-unit-aware decimal form.
+        required: true
+        logicalTypeOptions:
+          minimum: -1000000
+          maximum: 1000000
+
+      - name: currency
+        businessName: Currency Code
+        logicalType: string
+        physicalType: VARCHAR
+        description: ISO 4217 three-letter currency code.
+        required: true
+        # First-class enum (read directly by `datacontract test` in CLI 1.2.x).
+        enum: ['AUD', 'USD', 'NZD', 'GBP', 'EUR']
+
+      - name: merchant
+        businessName: Merchant Name
+        logicalType: string
+        physicalType: VARCHAR
+        description: Free-text merchant / counterparty name.
+        required: false
+
+      - name: event_timestamp
+        businessName: Event Timestamp
+        logicalType: date
+        physicalType: TIMESTAMP
+        description: UTC timestamp at which the transaction event was emitted.
+        required: true
+
+    # -----------------------------------------------------------------------
+    # Schema-level quality rules (executed by `datacontract test`).
+    # SQL rules are the most portable across engines; each must return rows
+    # that represent VIOLATIONS, asserted to be zero.
+    # -----------------------------------------------------------------------
+    quality:
+      - type: sql
+        description: Transaction amount must fall within the agreed range.
+        query: >-
+          SELECT COUNT(*) AS violations
+          FROM transactions
+          WHERE amount < -1000000 OR amount > 1000000
+        mustBe: 0
+
+      - type: sql
+        description: Currency must be one of the agreed ISO-4217 codes.
+        query: >-
+          SELECT COUNT(*) AS violations
+          FROM transactions
+          WHERE currency NOT IN ('AUD', 'USD', 'NZD', 'GBP', 'EUR')
+        mustBe: 0
+
+      - type: sql
+        description: No duplicate transaction identifiers.
+        query: >-
+          SELECT COUNT(*) AS violations FROM (
+            SELECT transaction_id FROM transactions
+            GROUP BY transaction_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+# ---------------------------------------------------------------------------
+# Service levels: operational expectations the producer commits to.
+# ---------------------------------------------------------------------------
+slaProperties:
+  - property: freshness
+    value: 24
+    unit: h
+    description: Events are no more than 24 hours old at ingestion.
+  - property: completeness
+    value: 99.9
+    unit: '%'
+    description: At least 99.9% of expected events are present.
+
+# ---------------------------------------------------------------------------
+# Team / ownership (illustrative — portfolio demo).
+# ---------------------------------------------------------------------------
+team:
+  - username: data-producer
+    role: owner
+    dateIn: '2026-01-01'
+  - username: analytics-consumer
+    role: consumer
+    dateIn: '2026-01-01'

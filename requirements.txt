@@ -1,0 +1,7 @@
+# Pinned for reproducibility. These tools move fast — bump deliberately and
+# re-run `make demo && make test` after any upgrade.
+#
+# datacontract-cli 1.2.0+ supports ODCS v3.2.0. The [all] extra pulls in the
+# connectors (incl. DuckDB) used by `datacontract test`.
+datacontract-cli[all]==1.2.7
+duckdb==1.1.3
