@@ -1,7 +1,7 @@
 # shift-left-1-webhook-interceptor
 > An ODCS data contract that blocks a breaking schema change in CI, before it ever reaches the warehouse.
 
-[![datacontract](https://github.com/initiative1972/shift-left-webhook-interceptor/actions/workflows/datacontract.yml/badge.svg)](../../actions/workflows/datacontract.yml)
+[![datacontract](https://github.com/initiative1972/shift-left-1-webhook-interceptor/actions/workflows/datacontract.yml/badge.svg)](../../actions/workflows/datacontract.yml)
 
 **The point in one line:** an upstream team drops a field from a webhook payload; this pipeline catches it in continuous integration and **blocks the merge** before the analytical warehouse is ever corrupted.
 
